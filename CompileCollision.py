@@ -19,7 +19,7 @@ collision_points = []
 
 
 def turn_car(event):
-    global ANGLE, image_tk, img
+    global ANGLE, image_tk
     ANGLE += 10
     ANGLE %= 360
 
@@ -51,6 +51,15 @@ def draw_point(x, y):
 
 
 def turn_point_by_angle(angle, center_x, center_y, x, y):
+    '''
+    функция рассчитывает новое положение точки относительно центра и угла поворота
+    :param angle: угол поворота
+    :param center_x: центр по Х
+    :param center_y: центр по У
+    :param x: текущая х
+    :param y: текущая у
+    :return:
+    '''
     new_x = (x - center_x) * math.sin(angle * math.pi / 180) - (
             (y - center_y) * math.cos(angle * math.pi / 180)) + center_x
 
