@@ -10,7 +10,7 @@ w = Canvas(window, width=500, height=500)
 w.focus_set()
 w.pack()
 
-def_image = Image.open("Police.png")
+def_image = Image.open("Taxi.png")
 def_image = def_image.resize((200, 200), Image.ANTIALIAS)
 image = def_image.rotate(ANGLE, expand=True)
 image_tk = ImageTk.PhotoImage(image)
@@ -42,24 +42,24 @@ def draw_point(x, y):
 def compute_collision_points():
     w.delete(*collision_points)
     coord = w.coords(img)
-    car_height = 90
+    car_height = 80
     car_width = 180
 
-    for i in ((coord[0] - car_width / 2, coord[1] - car_height / 2),
-              (coord[0] + car_width / 2, coord[1] - car_height / 2),
-              (coord[0] + car_width / 2, coord[1] + car_height / 2),
-              (coord[0] - car_width / 2, coord[1] + car_height / 2)):
+    for i in ((coord[0] - car_height / 2, coord[1] - car_width / 2),
+              (coord[0] + car_height / 2, coord[1] - car_width / 2),
+              (coord[0] + car_height / 2, coord[1] + car_width / 2),
+              (coord[0] - car_height / 2, coord[1] + car_width / 2)):
 
         centerx = coord[0]
         centery = coord[1]
         x = i[0]
         y = i[1]
 
-        newx = (y - centerx) * math.sin(ANGLE * math.pi / 180) - (
-                (x - centery) * math.cos(ANGLE * math.pi / 180)) + centerx
+        newx = (x - centerx) * math.sin(ANGLE * math.pi / 180) - (
+                (y - centery) * math.cos(ANGLE * math.pi / 180)) + centerx
 
-        newy = (y - centerx) * math.cos(ANGLE * math.pi / 180) + (
-                (x - centery) * math.sin(ANGLE * math.pi / 180)) + centery
+        newy = (x - centerx) * math.cos(ANGLE * math.pi / 180) + (
+                (y - centery) * math.sin(ANGLE * math.pi / 180)) + centery
 
         collision_points.append(draw_point(newx, newy))
 
