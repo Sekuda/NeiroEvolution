@@ -30,7 +30,8 @@ class Car:
         self.time_spent = 0
 
     def random_sprite(self):
-        self.car_sprite = pygame.image.load('sprites/' + random.choice(self.car_sprites) + '.png')
+        # self.car_sprite = pygame.image.load('sprites/' + random.choice(self.car_sprites) + '.png')
+        self.car_sprite = pygame.image.load(random.choice(self.car_sprites) + '.png')
         self.car_sprite = pygame.transform.scale(self.car_sprite,
                                                  (math.floor(self.car_sprite.get_size()[0] / 2),
                                                   math.floor(self.car_sprite.get_size()[1] / 2)))
@@ -180,7 +181,7 @@ def run_generation(genomes, config):
     pygame.init()
     screen = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
-    road = pygame.image.load('sprites/road.png')
+    road = pygame.image.load('road.png')
 
     font = pygame.font.SysFont("Roboto", 40)
     heading_font = pygame.font.SysFont("Roboto", 80)
@@ -250,7 +251,7 @@ def run_generation(genomes, config):
 
 if __name__ == "__main__":
     # setup config
-    config_path = "./config-feedforward.txt"
+    config_path = "config-feedforward.txt"
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet,
                                 neat.DefaultStagnation, config_path)
 

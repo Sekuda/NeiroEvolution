@@ -29,6 +29,7 @@ def turn_car(event):
     w.itemconfig(img, image=image_tk)
     compute_collision_points()
 
+
 def turn_car_left(event):
     global ANGLE, image_tk, img
     ANGLE -= 10
@@ -43,6 +44,7 @@ def turn_car_left(event):
 
 w.bind('<Button-1>', turn_car)
 w.bind('<Button-3>', turn_car_left)
+
 
 def draw_point(x, y):
     radius = 5
@@ -69,6 +71,28 @@ def turn_point_by_angle(angle, center_x, center_y, x, y):
     return new_x, new_y
 
 
+def turn_rectangle_by_angle(angle, center: (), width: int, height: int):
+    '''
+    Поворачивает прямоугольник на "angle" относительно заданного центра
+    :param angle: угол поворота
+    :param center: центр поворота
+    :param width: ширина прямоугольника
+    :param height: высота прямоугольника
+    :return: новые координаты вершин
+    '''
+    new_points_coord = []
+    for i in ((center[0] - height / 2, center[1] - width / 2),
+              (center[0] + height / 2, center[1] - width / 2),
+              (center[0] + height / 2, center[1] + width / 2),
+              (center[0] - height / 2, center[1] + width / 2)):
+
+        centerx, centery = center[0], center[1]
+        x, y = i[0], i[1]
+        new_points_coord.append(turn_point_by_angle(angle, centerx, centery, x, y))
+
+    return new_points_coord
+
+
 def compute_collision_points():
     w.delete(*collision_points)
     coord = w.coords(img)
@@ -84,16 +108,11 @@ def compute_collision_points():
         centery = coord[1]
         x = i[0]
         y = i[1]
-        #
-        # newx = (x - centerx) * math.sin(ANGLE * math.pi / 180) - (
-        #         (y - centery) * math.cos(ANGLE * math.pi / 180)) + centerx
-        #
-        # newy = (x - centerx) * math.cos(ANGLE * math.pi / 180) + (
-        #         (y - centery) * math.sin(ANGLE * math.pi / 180)) + centery
 
-        # collision_points.append(draw_point(newx, newy))
         collision_points.append(draw_point(*turn_point_by_angle(ANGLE, centerx, centery, x, y)))
 
-compute_collision_points()
+if __name__ == "__main__":
 
-mainloop()
+    compute_collision_points()
+
+    mainloop()
