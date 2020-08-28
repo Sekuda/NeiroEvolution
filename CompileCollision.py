@@ -82,7 +82,7 @@ def turn_rectangle_by_angle(angle, center: (), width: int, height: int):
 
         centerx, centery = center[0], center[1]
         x, y = i[0], i[1]
-        new_points_coord.append(rotate_point(x, y, centerx, centery, -angle))
+        new_points_coord.append(rotate_point(x, y, centerx, centery, angle))
 
     return new_points_coord
 
