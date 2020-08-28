@@ -58,26 +58,32 @@ def draw_point(x, y, fill_="green"):
     point = w.create_oval(x - radius, y - radius, x + radius, y + radius, fill=fill_)
     return point
 
-
-def turn_point_by_angle(angle, center_x, center_y, x, y):
+def turn_rectangle_by_angle(angle, center: (), width: int, height: int):
     '''
+    Поворачивает прямоугольник на "angle" относительно заданного центра
     функция рассчитывает новое положение точки относительно центра и угла поворота
     :param angle: угол поворота
+    :param center: центр поворота
+    :param width: ширина прямоугольника
+    :param height: высота прямоугольника
+    :return: новые координаты вершин
     :param center_x: центр по Х
     :param center_y: центр по У
     :param x: текущая х
     :param y: текущая у
     :return:
     '''
+    new_points_coord = []
+    for i in ((center[0] - height / 2, center[1] - width / 2),
+              (center[0] + height / 2, center[1] - width / 2),
+              (center[0] + height / 2, center[1] + width / 2),
+              (center[0] - height / 2, center[1] + width / 2)):
 
-    new_x = (x - center_x) * math.sin(angle * math.pi / 180) - (
-            (y - center_y) * math.cos(angle * math.pi / 180)) + center_x
+        centerx, centery = center[0], center[1]
+        x, y = i[0], i[1]
+        new_points_coord.append(turn_point_by_angle(angle, centerx, centery, x, y))
 
-    new_y = (x - center_x) * math.cos(angle * math.pi / 180) + (
-            (y - center_y) * math.sin(angle * math.pi / 180)) + center_y
-
-    return new_x, new_y
-
+    return new_points_coord
 
 def turn_point_by_angle(angle, center_x, center_y, x, y):
     '''
@@ -155,8 +161,8 @@ def compute_radar():
         # radar_position = rotate_point(x, y, coord[0], coord[1], angle_)
         for i in range(600):
             radar_position = offset_point(coord[0], coord[1], i, angle_)
-            if (radar_position[0] >= 490 or radar_position[1] >= 490
-                    or radar_position[0] <= 10 or radar_position[1] <= 10):
+            if (radar_position[0] >= 500 or radar_position[1] >= 500
+                    or radar_position[0] <= 0 or radar_position[1] <= 0):
                 break
 
         radar = draw_point(*radar_position, fill_="yellow")
