@@ -81,21 +81,9 @@ def turn_rectangle_by_angle(angle, center: (), width: int, height: int):
 
         centerx, centery = center[0], center[1]
         x, y = i[0], i[1]
-        new_points_coord.append(turn_point_by_angle(angle, centerx, centery, x, y))
+        new_points_coord.append(rotate_point(x, y, centerx, centery, angle))
 
     return new_points_coord
-
-def turn_point_by_angle(angle, center_x, center_y, x, y):
-    '''
-    функция рассчитывает новое положение точки относительно центра и угла поворота
-    :param angle: угол поворота
-    :param center_x: центр по Х
-    :param center_y: центр по У
-    :param x: текущая х
-    :param y: текущая у
-    :return:
-    '''
-    return rotate_point(x, y, center_x, center_y, angle)
 
 
 def rotate_point(x, y, centerx, centery, degrees):
@@ -136,7 +124,7 @@ def compute_collision_points():
         centery = coord[1]
         x = i[0]
         y = i[1]
-        point_position = turn_point_by_angle(ANGLE, centerx, centery, x, y)
+        point_position = rotate_point(x, y, centerx, centery, ANGLE)
         collision_points.append(draw_point(*point_position))
 
 
