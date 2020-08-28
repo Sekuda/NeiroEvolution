@@ -25,7 +25,7 @@ RADAR_COUNT = 10
 
 def turn_car(event):
     global ANGLE, image_tk
-    ANGLE -= 10
+    ANGLE -= 5
     ANGLE %= 360
 
     image_tmp = def_image.rotate(-ANGLE)
@@ -38,7 +38,7 @@ def turn_car(event):
 
 def turn_car_left(event):
     global ANGLE, image_tk, img
-    ANGLE += 10
+    ANGLE += 5
     ANGLE %= 360
 
     image_tmp = def_image.rotate(-ANGLE)
@@ -92,9 +92,29 @@ def turn_point_by_angle(angle, center_x, center_y, x, y):
 
 
 def rotate_point(x, y, centerx, centery, degrees):
-    newx = (x - centerx) * math.cos(degrees * math.pi / 180) - (y - centery) * math.sin(degrees * math.pi / 180) + centerx;
-    newy = (x - centerx) * math.sin(degrees * math.pi / 180) + (y - centery) * math.cos(degrees * math.pi / 180) + centery;
+    # newx = (x - centerx) * math.cos(degrees * math.pi / 180) - (y - centery) * math.sin(degrees * math.pi / 180) + centerx;
+    # newy = (x - centerx) * math.sin(degrees * math.pi / 180) + (y - centery) * math.cos(degrees * math.pi / 180) + centery;
+    newx = (x - centerx) * math.cos(math.radians(degrees)) - (y - centery) * math.sin(math.radians(degrees)) + centerx
+    newy = (x - centerx) * math.sin(math.radians(degrees)) + (y - centery) * math.cos(math.radians(degrees)) + centery
+
     return [newx, newy]
+
+
+def offset_point(centerX, centerY, offset, angle):
+    # x = centerX + cos(radians(360 - (angle + degree))) * length
+    # y = centerY + sin(radians(360 - (angle + degree))) * length
+    #
+    # offsetX = deltaX * cos(90 - Angle) - deltaY * sin(90 - Angle)
+    # offsetY = deltaX * sin(90 - Angle) + deltaY * cos(90 - Angle)
+    #
+    # newX = (X2 - X) * cos(90 - Angle) - (Y2 - Y) * sin(90 - Angle) + X;
+    # newY = (X2 - X) * sin(90 - Angle) + (Y2 - Y) * cos(90 - Angle) + Y;
+    # moveX = X3 - newX;
+    # moveY = Y3 - newY;
+
+    x = centerX + math.cos(math.radians(180+angle)) * offset
+    y = centerY + math.sin(math.radians(180+angle)) * offset
+    return [x, y]
 
 
 def compute_collision_points():
@@ -114,6 +134,11 @@ def compute_collision_points():
         collision_points.append(draw_point(*point_position))
 
 
+# def compile_radar_lenn():
+#     length = 0
+#     x = int(self.center[0] + math.cos(math.radians(360 - (ANGLE + degree))) * length)
+#     y = int(self.center[1] + math.sin(math.radians(360 - (ANGLE + degree))) * length)
+
 
 def compute_radar():
     w.delete(*radars)
@@ -126,8 +151,13 @@ def compute_radar():
     x = coord[0]
     y = coord[1] - car_width
     for i in range(RADAR_COUNT):
-        angle_ = ANGLE + step*(i)
-        radar_position = rotate_point(x, y, coord[0], coord[1], angle_)
+        angle_ = ANGLE + step*(i) + 90
+        # radar_position = rotate_point(x, y, coord[0], coord[1], angle_)
+        for i in range(600):
+            radar_position = offset_point(coord[0], coord[1], i, angle_)
+            if (radar_position[0] >= 490 or radar_position[1] >= 490
+                or radar_position[0] <= 10 or radar_position[1] <= 10):
+                break
 
         radar = draw_point(*radar_position, fill_="yellow")
         radars.append(radar)
