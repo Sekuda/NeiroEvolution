@@ -58,6 +58,7 @@ def draw_point(x, y, fill_="green"):
     point = w.create_oval(x - radius, y - radius, x + radius, y + radius, fill=fill_)
     return point
 
+
 def turn_rectangle_by_angle(angle, center: (), width: int, height: int):
     '''
     Поворачивает прямоугольник на "angle" относительно заданного центра
@@ -74,23 +75,23 @@ def turn_rectangle_by_angle(angle, center: (), width: int, height: int):
     :return:
     '''
     new_points_coord = []
-    for i in ((center[0] - height / 2, center[1] - width / 2),
-              (center[0] + height / 2, center[1] - width / 2),
-              (center[0] + height / 2, center[1] + width / 2),
-              (center[0] - height / 2, center[1] + width / 2)):
+    for i in ((center[0] - width / 2, center[1] - height / 2),
+              (center[0] + width / 2, center[1] - height / 2),
+              (center[0] + width / 2, center[1] + height / 2),
+              (center[0] - width / 2, center[1] + height / 2)):
 
         centerx, centery = center[0], center[1]
         x, y = i[0], i[1]
-        new_points_coord.append(rotate_point(x, y, centerx, centery, angle))
+        new_points_coord.append(rotate_point(x, y, centerx, centery, -angle))
 
     return new_points_coord
 
 
 def rotate_point(x, y, centerx, centery, degrees):
-    # newx = (x - centerx) * math.cos(degrees * math.pi / 180) - (y - centery) * math.sin(degrees * math.pi / 180) + centerx;
-    # newy = (x - centerx) * math.sin(degrees * math.pi / 180) + (y - centery) * math.cos(degrees * math.pi / 180) + centery;
-    newx = (x - centerx) * math.cos(math.radians(degrees)) - (y - centery) * math.sin(math.radians(degrees)) + centerx
-    newy = (x - centerx) * math.sin(math.radians(degrees)) + (y - centery) * math.cos(math.radians(degrees)) + centery
+    newx = (x - centerx) * math.cos(degrees * math.pi / 180) - (y - centery) * math.sin(degrees * math.pi / 180) + centerx;
+    newy = (x - centerx) * math.sin(degrees * math.pi / 180) + (y - centery) * math.cos(degrees * math.pi / 180) + centery;
+    # newx = (x - centerx) * math.cos(math.radians(degrees)) - (y - centery) * math.sin(math.radians(degrees)) + centerx
+    # newy = (x - centerx) * math.sin(math.radians(degrees)) + (y - centery) * math.cos(math.radians(degrees)) + centery
 
     return [newx, newy]
 
@@ -132,6 +133,19 @@ def compute_collision_points():
 #     length = 0
 #     x = int(self.center[0] + math.cos(math.radians(360 - (ANGLE + degree))) * length)
 #     y = int(self.center[1] + math.sin(math.radians(360 - (ANGLE + degree))) * length)
+
+def get_radar_positions(radar_cnt, radar_sector, angle, max_radar_range, center_x, center_y):
+    radars = []
+    step = radar_sector / (radar_cnt - 1)
+    for i in range(radar_cnt):
+        offset_angle = angle + step * i + 45
+        for radar_range in range(max_radar_range):
+            radar_position = offset_point(center_x, center_y, radar_range, offset_angle)
+            if (radar_position[0] >= max_radar_range or radar_position[1] >= max_radar_range
+                    or radar_position[0] <= 0 or radar_position[1] <= 0):
+                break
+            radars.append(radar_position)
+    return radars
 
 
 def compute_radar():

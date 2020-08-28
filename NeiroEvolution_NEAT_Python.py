@@ -4,10 +4,11 @@ import pygame
 import math
 import sys
 import os
-from NeiroEvolution.CompileCollision import turn_rectangle_by_angle
+from NeiroEvolution.CompileCollision import turn_rectangle_by_angle, offset_point
 
 width = 650
 height = 550
+bg = (213, 193, 154, 255)
 
 
 class Car:
@@ -16,7 +17,7 @@ class Car:
     def __init__(self):
         self.random_sprite()
 
-        self.angle = 120
+        self.angle = 0
         self.speed = 5
 
         self.radars = []
@@ -61,6 +62,8 @@ class Car:
         self.compute_collision_points()
         # self.check_collision(road)
 
+        self.compile_radars(road)
+
     def set_new_position(self):
         self.pos[0] += math.cos(math.radians(360 - self.angle)) * self.speed
         self.pos[1] += math.sin(math.radians(360 - self.angle)) * self.speed
@@ -81,9 +84,29 @@ class Car:
         # else:
         #     pygame.draw.circle(screen, (15, 192, 252), (int(p[0]), int(p[1])), 5)
 
+    def compile_radars(self, road):
+        self.radars.clear()
+        radar_cnt = 11
+        max_radar_range = 200
+        step = 270 / (radar_cnt - 1)
+        for i in range(radar_cnt):
+            offset_angle = self.angle + step * i + 45
+            for radar_range in range(max_radar_range):
+                radar_position = offset_point(self.center[0], self.center[1], radar_range, -offset_angle)
+                if radar_range + 1 == max_radar_range or road.get_at(
+                        (int(radar_position[0]), int(radar_position[1]))) == bg:
+                    self.radars.append(radar_position)
+                    break
+
+    def draw_radars(self, screen):
+        for r in self.radars:
+            pygame.draw.line(screen, (183, 235, 70), self.center, r, 1)
+            d = [int(r[0]), int(r[1])]
+            pygame.draw.circle(screen, (183, 235, 70), d, 5)
+
 
 def run_generation():
-    car_cnt = 1
+    car_cnt = 10
     cars = []
 
     for i in range(car_cnt):
@@ -113,6 +136,7 @@ def run_generation():
             car.draw(screen)
             car.update(road)
             car.draw_collision_points(screen)
+            car.draw_radars(screen)
 
         pygame.display.flip()
 

@@ -72,8 +72,8 @@ class Car:
 
     def compute_collision_points(self):
         self.compute_center()
-        lw = 65
-        lh = 65
+        lw = 60
+        lh = 60
 
         lt = [self.center[0] + math.cos(math.radians(360 - (self.angle + 20))) * lw,
               self.center[1] + math.sin(math.radians(360 - (self.angle + 20))) * lh]
