@@ -20,7 +20,7 @@ radars = []
 radars_line = []
 car_height = 80
 car_width = 180
-RADAR_COUNT = 10
+RADAR_COUNT = 11
 
 
 def turn_car(event):
@@ -47,6 +47,7 @@ def turn_car_left(event):
     w.itemconfig(img, image=image_tk)
     compute_collision_points()
     compute_radar()
+
 
 w.bind('<Button-1>', turn_car)
 w.bind('<Button-3>', turn_car_left)
@@ -112,8 +113,8 @@ def offset_point(centerX, centerY, offset, angle):
     # moveX = X3 - newX;
     # moveY = Y3 - newY;
 
-    x = centerX + math.cos(math.radians(180+angle)) * offset
-    y = centerY + math.sin(math.radians(180+angle)) * offset
+    x = centerX + math.cos(math.radians(180 + angle)) * offset
+    y = centerY + math.sin(math.radians(180 + angle)) * offset
     return [x, y]
 
 
@@ -125,7 +126,6 @@ def compute_collision_points():
               (coord[0] + car_width / 2, coord[1] - car_height / 2),
               (coord[0] + car_width / 2, coord[1] + car_height / 2),
               (coord[0] - car_width / 2, coord[1] + car_height / 2)):
-
         centerx = coord[0]
         centery = coord[1]
         x = i[0]
@@ -147,16 +147,16 @@ def compute_radar():
     radars.clear()
     coord = w.coords(img)
     #
-    step = 180/(RADAR_COUNT-1)
+    step = 270 / (RADAR_COUNT - 1)
     x = coord[0]
     y = coord[1] - car_width
     for i in range(RADAR_COUNT):
-        angle_ = ANGLE + step*(i) + 90
+        angle_ = ANGLE + step * i + 45
         # radar_position = rotate_point(x, y, coord[0], coord[1], angle_)
         for i in range(600):
             radar_position = offset_point(coord[0], coord[1], i, angle_)
             if (radar_position[0] >= 490 or radar_position[1] >= 490
-                or radar_position[0] <= 10 or radar_position[1] <= 10):
+                    or radar_position[0] <= 10 or radar_position[1] <= 10):
                 break
 
         radar = draw_point(*radar_position, fill_="yellow")
@@ -166,9 +166,7 @@ def compute_radar():
         radars_line.append(line)
 
 
-
 if __name__ == "__main__":
-
     compute_radar()
     compute_collision_points()
 
