@@ -10,7 +10,7 @@ w = Canvas(window, width=500, height=500)
 w.focus_set()
 w.pack()
 
-def_image = Image.open("source/Taxi.png")
+def_image = Image.open("src/Taxi.png")
 def_image = def_image.resize((200, 200), Image.ANTIALIAS)
 image = def_image.rotate(ANGLE, expand=True)
 image_tk = ImageTk.PhotoImage(image)
