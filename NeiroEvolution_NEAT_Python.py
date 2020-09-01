@@ -194,6 +194,84 @@ def run_generation(genomes, config):
                 car.draw(screen)
                 # car.draw_collision_points(screen)
                 car.draw_radars(screen)
+                if car.distance >= 6000:
+                    break
+            car.draw_kill_place(screen)
+        if not cars_left:
+            break
+
+        label = heading_font.render("Поколение: " + str(generation), True, (73, 168, 70))
+        label_rect = label.get_rect()
+        label_rect.center = (width / 1.5, 300)
+        screen.blit(label, label_rect)
+
+        label = font.render("Машин осталось: " + str(cars_left), True, (51, 59, 70))
+        label_rect = label.get_rect()
+        label_rect.center = (width / 1.5, 375)
+        screen.blit(label, label_rect)
+
+        pygame.display.flip()
+
+def run_generation2(genomes, config):
+
+    cars = []
+    nets = []
+    global generation
+    generation += 1
+    for i, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        g.fitness = 0  # every genome is not successful at the start
+        cars.append(Car())
+
+    os.environ['SDL_VIDEO_CENTERED'] = '1'
+    pygame.init()
+    screen = pygame.display.set_mode((width, height))
+
+    clock = pygame.time.Clock()
+    road = pygame.image.load('road.png')
+    road = pygame.transform.scale(road, (math.floor(road.get_size()[0] / 2),
+                                         math.floor(road.get_size()[1] / 2)))
+
+    font = pygame.font.SysFont("Roboto", 30)
+    heading_font = pygame.font.SysFont("Roboto", 40)
+
+    # pygame.display.flip()
+    while True:
+        screen.blit(road, (0, 0))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit(0)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    start = True
+
+        # input each car data
+        for i, car in enumerate(cars):
+            output = nets[i].activate(car.get_data())
+            i = output.index(max(output))
+
+            if i == 0:
+                car.angle += 5
+            elif i == 1:
+                car.angle = car.angle
+            elif i == 2:
+                car.angle -= 5
+
+        cars_left = 0
+        for i, car in enumerate(cars):
+            if car.is_alive:
+                genomes[i][1].fitness += car.get_reward()
+                cars_left += 1
+                car.update(road)
+
+            if car.is_alive:
+                car.draw(screen)
+                # car.draw_collision_points(screen)
+                car.draw_radars(screen)
+                if car.distance >= 6000:
+                    break
             car.draw_kill_place(screen)
         if not cars_left:
             break
@@ -220,4 +298,8 @@ if __name__ == "__main__":
     p = neat.Population(config)
     #
     # # run NEAT
-    p.run(run_generation, 1000)
+    p.run(run_generation, 10000)
+    p.config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet,
+                                neat.DefaultStagnation, "my_config-feedforward1.txt")
+    p.run(run_generation2, 1)
+
