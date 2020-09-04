@@ -9,7 +9,7 @@ height = 1100
 bg = (213, 193, 154, 255)
 
 generation = 0
-
+SRC = 'src/'
 
 class Car:
     # list of available cars, take random everytime
@@ -31,7 +31,7 @@ class Car:
 
     def random_sprite(self):
         # self.car_sprite = pygame.image.load('sprites/' + random.choice(self.car_sprites) + '.png')
-        self.car_sprite = pygame.image.load(random.choice(self.car_sprites) + '.png')
+        self.car_sprite = pygame.image.load(SRC + random.choice(self.car_sprites) + '.png')
         self.car_sprite = pygame.transform.scale(self.car_sprite,
                                                  (math.floor(self.car_sprite.get_size()[0] / 2),
                                                   math.floor(self.car_sprite.get_size()[1] / 2)))
@@ -181,7 +181,7 @@ def run_generation(genomes, config):
     pygame.init()
     screen = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
-    road = pygame.image.load('road.png')
+    road = pygame.image.load(SRC + 'road.png')
 
     font = pygame.font.SysFont("Roboto", 40)
     heading_font = pygame.font.SysFont("Roboto", 80)

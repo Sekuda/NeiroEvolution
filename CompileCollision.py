@@ -54,7 +54,7 @@ w.bind('<Button-3>', turn_car_left)
 
 
 def draw_point(x, y, fill_="green"):
-    radius = 5
+    radius = 10
     point = w.create_oval(x - radius, y - radius, x + radius, y + radius, fill=fill_)
     return point
 
@@ -108,8 +108,8 @@ def offset_point(centerX, centerY, offset, angle):
     # moveX = X3 - newX;
     # moveY = Y3 - newY;
 
-    x = centerX + math.cos(math.radians(180 + angle)) * offset
-    y = centerY + math.sin(math.radians(180 + angle)) * offset
+    x = centerX + math.cos(math.radians(360 + angle)) * offset
+    y = centerY + math.sin(math.radians(360 + angle)) * offset
     return [x, y]
 
 
@@ -154,12 +154,13 @@ def compute_radar():
 
     radars.clear()
     coord = w.coords(img)
-    #
-    step = 270 / (RADAR_COUNT - 1)
-    x = coord[0]
-    y = coord[1] - car_width
-    for i in range(RADAR_COUNT):
-        angle_ = ANGLE + step * i + 45
+    RADAR_COUNT = 30
+    sector = 120
+    step = sector / (RADAR_COUNT - 1)
+    # x = coord[0]
+    # y = coord[1] - car_width
+    for k in range(RADAR_COUNT):
+        angle_ = ANGLE + sector/2 + (360 - step)*k
         # radar_position = rotate_point(x, y, coord[0], coord[1], angle_)
         for i in range(600):
             radar_position = offset_point(coord[0], coord[1], i, angle_)
@@ -167,7 +168,13 @@ def compute_radar():
                     or radar_position[0] <= 0 or radar_position[1] <= 0):
                 break
 
-        radar = draw_point(*radar_position, fill_="yellow")
+        fill = "yellow"
+        if k == 0:
+            fill = "red"
+        elif k == 1:
+            fill = "green"
+
+        radar = draw_point(*radar_position, fill_=fill)
         radars.append(radar)
 
         line = w.create_line(*coord, *radar_position)
