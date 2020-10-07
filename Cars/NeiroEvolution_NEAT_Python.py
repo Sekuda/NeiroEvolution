@@ -7,7 +7,6 @@ import os
 import neat
 import pickle
 import gzip
-import time
 
 from NeiroEvolution.Cars.CompileCollision import turn_rectangle_by_angle, offset_point
 
@@ -101,7 +100,7 @@ class Car:
         step = sector / (radar_cnt - 1)
         for i in range(radar_cnt):
             # offset_angle = self.angle + step * i + 45
-            offset_angle = self.angle + sector/2 + (360 - step) * i
+            offset_angle = self.angle + sector / 2 + (360 - step) * i
             for radar_range in range(max_radar_range):
                 radar_position = offset_point(self.center[0], self.center[1], radar_range, -offset_angle)
                 if radar_range + 1 == max_radar_range or road.get_at(
@@ -113,9 +112,9 @@ class Car:
 
     def draw_radars(self, screen):
         for r, distantion in self.radars:
-            pygame.draw.line(screen, (183, 235, 70), self.center, r, 1)
+            pygame.draw.line(screen, (255, 255, 40), self.center, r, 1)
             d = [int(r[0]), int(r[1])]
-            pygame.draw.circle(screen, (183, 235, 70), d, 5)
+            pygame.draw.circle(screen, (255, 255, 10), d, 5)
 
     def draw_kill_place(self, screen):
         if not self.is_alive:
@@ -131,7 +130,7 @@ class Car:
 
     def get_data(self):
         radars = self.radars
-        data = [0]*7
+        data = [0] * 7
 
         for i, r in enumerate(radars):
             data[i] = int(r[1] / 30)
@@ -143,7 +142,6 @@ class Car:
 
 
 def run_generation(genomes, config):
-
     cars = []
     nets = []
     global generation
@@ -199,14 +197,16 @@ def run_generation(genomes, config):
                 max_distance = max(max_distance, car.distance)
 
             if car.is_alive:
+                car.draw_radars(screen)
                 car.draw(screen)
                 # car.draw_collision_points(screen)
-                car.draw_radars(screen)
 
             car.draw_kill_place(screen)
         # if not cars_left:
-        print(max_distance)
-        if cars_left < 10 or max_distance >= 4000:
+
+        if cars_left < 10 or max_distance >= 3800:
+            print(f"generation: [{generation}] - max distance: [{max_distance}] - cars left [{cars_left}]")
+            save_checkpoint("best_gen_", config, population.population, population.species, population.generation)
             break
 
         label = heading_font.render("Поколение: " + str(generation), True, (73, 168, 70))
@@ -221,78 +221,83 @@ def run_generation(genomes, config):
 
         pygame.display.flip()
 
+def run_generation_one_car(genomes, config):
+    car = Car()
+    nets = []
+    global generation
+    generation += 1
+    for i, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        g.fitness = 0  # every genome is not successful at the start
 
-if __name__ == "__main__":
+    os.environ['SDL_VIDEO_CENTERED'] = '1'
+    pygame.init()
+    screen = pygame.display.set_mode((width, height))
+
+    clock = pygame.time.Clock()
+    road = pygame.image.load(SRC + 'road.png')
+    road = pygame.transform.scale(road, (math.floor(road.get_size()[0] / 2),
+                                         math.floor(road.get_size()[1] / 2)))
+
+    font = pygame.font.SysFont("Roboto", 30)
+    heading_font = pygame.font.SysFont("Roboto", 40)
+
+    # pygame.display.flip()
+    while True:
+        screen.blit(road, (0, 0))
+
+        output = nets[0].activate(car.get_data())
+        i = output.index(max(output))
+
+        if i == 0:
+            car.angle += 5
+        elif i == 1:
+            car.angle = car.angle
+        elif i == 2:
+            car.angle -= 5
+
+        if car.is_alive:
+            # genomes[i][1].fitness += car.get_reward()
+            car.update(road)
+            # car.draw_radars(screen)
+            car.draw(screen)
+
+        pygame.display.flip()
+
+
+def save_checkpoint(filename_prefix, config, population, species_set, generation):
+    """ Save the current simulation state. """
+    filename = '{0}{1}'.format(filename_prefix, generation)
+    print("Saving checkpoint to {0}".format(filename))
+    with gzip.open(filename, 'w', compresslevel=5) as f:
+        data = (generation, config, population, species_set, random.getstate())
+        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def restore_checkpoint(filename):
+    """Resumes the simulation from a previous saved point."""
+    with gzip.open(filename) as f:
+        generation, config, population, species_set, rndstate = pickle.load(f)
+        random.setstate(rndstate)
+        return neat.Population(config, (population, species_set, generation))
+
+
+def main(checkpoint_path=""):
+    global population
     config_path = "my_config-feedforward.txt"
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet,
                                 neat.DefaultStagnation, config_path)
-    #
-    # # init NEAT
-    p = neat.Population(config)
-    #
-    # # run NEAT
-    p.run(run_generation, 10000)
+
+    if checkpoint_path == "":
+        population = neat.Population(config)
+    else:
+        population = restore_checkpoint(checkpoint_path)
+
+    population.run(run_generation, 30)
+    save_checkpoint("best_gen_", config, population.population, population.species, population.generation)
 
 
-class Checkpointer(neat.reporting):
-    """
-    A reporter class that performs checkpointing using `pickle`
-    to save and restore populations (and other aspects of the simulation state).
-    """
-
-    def __init__(self, generation_interval=100, time_interval_seconds=300,
-                 filename_prefix='neat-checkpoint-'):
-        """
-        Saves the current state (at the end of a generation) every ``generation_interval`` generations or
-        ``time_interval_seconds``, whichever happens first.
-        :param generation_interval: If not None, maximum number of generations between save intervals
-        :type generation_interval: int or None
-        :param time_interval_seconds: If not None, maximum number of seconds between checkpoint attempts
-        :type time_interval_seconds: float or None
-        :param str filename_prefix: Prefix for the filename (the end will be the generation number)
-        """
-        self.generation_interval = generation_interval
-        self.time_interval_seconds = time_interval_seconds
-        self.filename_prefix = filename_prefix
-
-        self.current_generation = None
-        self.last_generation_checkpoint = -1
-        self.last_time_checkpoint = time.time()
-
-    def start_generation(self, generation):
-        self.current_generation = generation
-
-    def end_generation(self, config, population, species_set):
-        checkpoint_due = False
-
-        if self.time_interval_seconds is not None:
-            dt = time.time() - self.last_time_checkpoint
-            if dt >= self.time_interval_seconds:
-                checkpoint_due = True
-
-        if (checkpoint_due is False) and (self.generation_interval is not None):
-            dg = self.current_generation - self.last_generation_checkpoint
-            if dg >= self.generation_interval:
-                checkpoint_due = True
-
-        if checkpoint_due:
-            self.save_checkpoint(config, population, species_set, self.current_generation)
-            self.last_generation_checkpoint = self.current_generation
-            self.last_time_checkpoint = time.time()
-
-    def save_checkpoint(self, config, population, species_set, generation):
-        """ Save the current simulation state. """
-        filename = '{0}{1}'.format(self.filename_prefix, generation)
-        print("Saving checkpoint to {0}".format(filename))
-
-        with gzip.open(filename, 'w', compresslevel=5) as f:
-            data = (generation, config, population, species_set, random.getstate())
-            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-    @staticmethod
-    def restore_checkpoint(filename):
-        """Resumes the simulation from a previous saved point."""
-        with gzip.open(filename) as f:
-            generation, config, population, species_set, rndstate = pickle.load(f)
-            random.setstate(rndstate)
-            return neat.population(config, (population, species_set, generation))
+if __name__ == "__main__":
+    main("best_gen_8")
+    # main()
