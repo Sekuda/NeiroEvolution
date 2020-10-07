@@ -5,12 +5,13 @@ WIDTH = 300
 HEIGHT = 300
 INITIAL_SPEED = 0.5
 MAX_INFECTED_AREA_RADIUS = 30
-PERSON_CNT = 20
-TEST_SECTOR = (50, 50, 180, 180)
+PERSON_CNT = 200
+INFECTED_CNT = 1
+TEST_SECTOR = (50, 50, 280, 280)
 
 
 class Person:
-    def __init__(self, area, canvas, radius=3):
+    def __init__(self, area, canvas, infected=False, radius=3):
         self.x_speed = random.uniform(-0.5, 0.5)
         self.y_speed = random.uniform(-0.5, 0.5)
         self.radius = radius
@@ -23,17 +24,26 @@ class Person:
         self.end_color = tuple((0, 0, 0))
         self.init_position()
         self.update_position(self.oval_bounds)
-        self.infected = True#bool(random.randint(0, 1))
-        self.chaotic_movement = False#bool(random.randint(0, 1))
+        self.infected = infected  # bool(random.randint(0, 1))
+        self.chaotic_movement = False  # bool(random.randint(0, 1))
         self.infected_area = self.radius
         self.draw(canvas)
 
     def init_position(self):
         """left - top - right - bot"""
-        self.oval_bounds = (self.area[0] + (self.area[2] - self.area[0]) / 2 - self.radius,
-                            self.area[1] + (self.area[3] - self.area[1]) / 2 - self.radius,
-                            self.area[0] + (self.area[2] - self.area[0]) / 2 + self.radius,
-                            self.area[1] + (self.area[3] - self.area[1]) / 2 + self.radius)
+        x = random.randint(self.area[0], self.area[2])
+        y = random.randint(self.area[1], self.area[3])
+        self.oval_bounds = (x-self.radius,
+                            y-self.radius,
+                            x+self.radius,
+                            y+self.radius)
+        """
+            позиция в центре поляны:
+            # self.oval_bounds = (self.area[0] + (self.area[2] - self.area[0]) / 2 - self.radius,
+            # self.area[1] + (self.area[3] - self.area[1]) / 2 - self.radius,
+            # self.area[0] + (self.area[2] - self.area[0]) / 2 + self.radius,
+            # self.area[1] + (self.area[3] - self.area[1]) / 2 + self.radius)
+        """
 
     def update_position(self, oval_bounds):
         self.oval_bounds = oval_bounds
@@ -46,22 +56,25 @@ class Person:
         # 'color_a' and 'color_b' are RGB tuples
         # 't' is a value between 0.0 and 1.0
         # this is a naive interpolation
-        return tuple(int(a + (b - a) * (self.infected_area / MAX_INFECTED_AREA_RADIUS)) for a, b in zip(self.start_color, self.end_color))
+        return tuple(int(a + (b - a) * (self.infected_area / MAX_INFECTED_AREA_RADIUS)) for a, b in
+                     zip(self.start_color, self.end_color))
 
     def draw_infected_area(self, canvas):
         if self.infected:
             new_color = self.interpolate()
             canvas.delete(self.radar_oval)
 
-            self.radar_oval = canvas.create_oval(self.left-self.infected_area,
-                                                    self.top-self.infected_area,
-                                                    self.right+self.infected_area,
-                                                    self.bot+self.infected_area,
-                                                    fill="", outline='#%02x%02x%02x' % new_color, width=2)
+            self.radar_oval = canvas.create_oval(self.left - self.infected_area,
+                                                 self.top - self.infected_area,
+                                                 self.right + self.infected_area,
+                                                 self.bot + self.infected_area,
+                                                 fill="", outline='#%02x%02x%02x' % new_color, width=2)
             if self.infected_area < MAX_INFECTED_AREA_RADIUS:
                 self.infected_area += 1
             else:
                 self.infected_area = self.radius
+
+            canvas.itemconfigure(self.person_oval, fill="red")
 
     def draw(self, canvas):
         if self.infected:
@@ -74,7 +87,7 @@ class Person:
         if self.chaotic_movement:
             rnd = random.uniform(-0.5, 0.5)
         else:
-            rnd = random.random()-0.5
+            rnd = random.random() - 0.5
         if action == "bounce_x":
             self.y_speed = rnd if self.y_speed > 0 else - rnd
             # if abs(self.x_speed) < infected_MAX_SPEED:
@@ -94,11 +107,44 @@ class Person:
             pass
 
     def move(self, canvas, person_list):
-        y_speed_tmp = self.y_speed if self.top != self.area[1] and self.bot != self.area[3] else 0
+
         # горизонтальный отскок
+        self.horizontal_move(canvas, person_list)
+        # вертикальный отскок
+        self.vertical_move(canvas, person_list)
+
+        self.draw_infected_area(canvas)
+        self.update_person_status(canvas, person_list)
+
+    def vertical_move(self, canvas, person_list):
+        x_speed_tmp = self.x_speed if self.left != self.area[0] and self.right != self.area[2] else 0
+        # Если мы далеко от вертикальных линий
+        if self.top + self.y_speed > self.area[1] and self.bot + self.y_speed < self.area[3]:
+            if self.check_vertical_collisions(person_list):
+                self.bounce("bounce_y")
+            else:
+                # просто двигаем Person
+                canvas.move(self.person_oval, x_speed_tmp, self.y_speed)
+                self.bounce("speed_up_y")
+                self.update_position(c.coords(self.person_oval))
+
+        # Если Person касается своей верхней или нижней стороной границы поля
+        elif self.top == self.area[1] or self.bot == self.area[3]:
+            self.bounce("bounce_y")
+        # Проверка ситуации, в которой Person может вылететь за границы сектора.
+        # В таком случае просто двигаем его к границе поля.
+        else:
+            if self.top < self.area[1] + (self.area[3] - self.area[1]) / 2:
+                canvas.move(self.person_oval, x_speed_tmp, self.area[1] - self.top)
+            else:
+                canvas.move(self.person_oval, x_speed_tmp, self.area[3] - self.bot)
+            self.update_position(c.coords(self.person_oval))
+
+    def horizontal_move(self, canvas, person_list):
+        y_speed_tmp = self.y_speed if self.top != self.area[1] and self.bot != self.area[3] else 0
         # Если мы далеко от вертикальных линий
         if self.right + self.x_speed < self.area[2] and self.left + self.x_speed > self.area[0]:
-            if check_horizontal_collisions(self, person_list):
+            if self.check_horizontal_collisions(person_list):
                 self.bounce("bounce_x")
             else:
                 # просто двигаем Person
@@ -119,30 +165,64 @@ class Person:
                 canvas.move(self.person_oval, -self.left + self.area[0], y_speed_tmp)
             self.update_position(c.coords(self.person_oval))
 
-        x_speed_tmp = self.x_speed if self.left != self.area[0] and self.right != self.area[2] else 0
-        # вертикальный отскок
-        # Если мы далеко от вертикальных линий
-        if self.top + self.y_speed > self.area[1] and self.bot + self.y_speed < self.area[3]:
-            if check_vertical_collisions(self, person_list):
-                self.bounce("bounce_y")
-            else:
-                # просто двигаем Person
-                canvas.move(self.person_oval, x_speed_tmp, self.y_speed)
-                self.bounce("speed_up_y")
-                self.update_position(c.coords(self.person_oval))
-        # Если Person касается своей верхней или нижней стороной границы поля
-        elif self.top == self.area[1] or self.bot == self.area[3]:
-            self.bounce("bounce_y")
-        # Проверка ситуации, в которой Person может вылететь за границы сектора.
-        # В таком случае просто двигаем его к границе поля.
-        else:
-            if self.top < self.area[1] + (self.area[3] - self.area[1]) / 2:
-                canvas.move(self.person_oval, x_speed_tmp, self.area[1] - self.top)
-            else:
-                canvas.move(self.person_oval, x_speed_tmp, self.area[3] - self.bot)
-            self.update_position(c.coords(self.person_oval))
+    def update_person_status(self, canvas, person_list):
+        pass
 
-        self.draw_infected_area(canvas)
+    def check_horizontal_collisions(self, _person_list):
+        """
+            1 проверка столкновения центра
+            2 проверка попадания в область видимости (infected_area)
+            3 Проверка попадания в область заражения (MAX_INFECTED_AREA_RADIUS)
+        """
+        if self.x_speed >= 0:
+            next_position_x = self.right + self.x_speed
+        else:
+            next_position_x = self.left + self.x_speed
+        next_position_y = self.top + self.radius
+
+        for _p in _person_list:
+            if self is _p:
+                continue
+            if _p.left < next_position_x < _p.right and _p.top < next_position_y < _p.bot:
+                if _p.infected:
+                    self.infected = True
+                return True
+            # if _p.left - _p.infected_area < next_position_x < _p.right + _p.infected_area and  \
+            #         _p.top - _p.infected_area < next_position_y < _p.bot + _p.infected_area:
+            #     result[1] = True
+            # if _p.left - MAX_INFECTED_AREA_RADIUS < next_position_x < _p.right + MAX_INFECTED_AREA_RADIUS and \
+            #         _p.top - MAX_INFECTED_AREA_RADIUS < next_position_y < _p.bot + MAX_INFECTED_AREA_RADIUS:
+            #     result[2] = True
+
+        return False
+
+    def check_vertical_collisions(self, _person_list):
+        """
+            1 проверка столкновения центра
+            2 проверка попадания в область видимости (infected_area)
+            3 Проверка попадания в область заражения (MAX_INFECTED_AREA_RADIUS)
+        """
+
+        if self.y_speed >= 0:
+            next_position_y = self.bot + self.y_speed
+        else:
+            next_position_y = self.top + self.y_speed
+        next_position_x = self.left + self.radius
+
+        for _p in _person_list:
+            if self is _p:
+                continue
+            if _p.left < next_position_x < _p.right and _p.top < next_position_y < _p.bot:
+                if _p.infected:
+                    self.infected = True
+                return True
+            # if _p.left - _p.infected_area < next_position_x < _p.right + _p.infected_area and \
+            #         _p.top - _p.infected_area < next_position_y < _p.bot + _p.infected_area:
+            #     result[1] = True
+            # if _p.left - MAX_INFECTED_AREA_RADIUS < next_position_x < _p.right + MAX_INFECTED_AREA_RADIUS and \
+            #         _p.top - MAX_INFECTED_AREA_RADIUS < next_position_y < _p.bot + MAX_INFECTED_AREA_RADIUS:
+            #     result[2] = True
+        return False
 
 
 def draw_sector(sector: ()):
@@ -152,49 +232,6 @@ def draw_sector(sector: ()):
     c.create_line(sector[2], sector[1], sector[2], sector[3], fill="white")
 
 
-def check_horizontal_collisions(person, _person_list):
-    """
-        1 проверка столкновения центра
-        2 проверка попадания в область видимости (infected_area)
-        3 Проверка попадания в область заражения (MAX_INFECTED_AREA_RADIUS)
-    """
-
-    if person.x_speed >= 0:
-        next_position_x = person.right + person.x_speed
-
-    else:
-        next_position_x = person.left + person.x_speed
-    next_position_y = person.top + person.radius
-
-    for _p in _person_list:
-        if person is _p:
-            continue
-        if _p.left < next_position_x < _p.right and _p.top < next_position_y < _p.bot:
-            return True
-
-    return False
-
-
-def check_vertical_collisions(person, _person_list):
-    """
-        1 проверка столкновения центра
-        2 проверка попадания в область видимости (infected_area)
-        3 Проверка попадания в область заражения (MAX_INFECTED_AREA_RADIUS)
-    """
-
-    if person.y_speed >= 0:
-        next_position_y = person.bot + person.y_speed
-    else:
-        next_position_y = person.top + person.y_speed
-    next_position_x = person.left + person.radius
-
-    for _p in _person_list:
-        if person is _p:
-            continue
-        if _p.left < next_position_x < _p.right and _p.top < next_position_y < _p.bot:
-            return True
-
-    return False
 
 
 def main():
@@ -214,10 +251,7 @@ if __name__ == "__main__":
     sector = TEST_SECTOR
     draw_sector(sector)
 
-    person_list = [Person(sector, c) for i in range(PERSON_CNT)]
-
+    person_list = [Person(sector, c) for i in range(PERSON_CNT)] + \
+                  [Person(sector, c, True) for i in range(INFECTED_CNT)]
     main()
     root.mainloop()
-
-
-
