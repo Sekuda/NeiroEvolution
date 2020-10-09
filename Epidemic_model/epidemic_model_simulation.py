@@ -6,8 +6,9 @@ HEIGHT = 300
 TEST_SECTOR = (0, 0, 150, 150)
 INITIAL_SPEED = 0.5
 MAX_INFECTED_AREA_RADIUS = 10
-PERSON_RADIUS = 3
-
+PERSON_RADIUS = 6
+MAX_POPULATION = 200
+CHAOTIC_MOVEMENT = 0
 PERSON_CNT = 20
 INFECTED_CNT = 4
 
@@ -24,7 +25,7 @@ class Person:
         self.radius = PERSON_RADIUS
         self.current_infected_area = PERSON_RADIUS
         self.infected = infected  # bool(random.randint(0, 1))
-        self.chaotic_movement = False  # bool(random.randint(0, 1))
+        self.chaotic_movement = CHAOTIC_MOVEMENT  # bool(random.randint(0, 1))
         self.live_power = 150
         self.reproduction_power = random.randint(0, 100)
 
@@ -197,16 +198,18 @@ class Person:
 
 
 def contact_reaction(catcher, target):
-    if target.infected:
+    if target.infected and not catcher.infected:
         catcher.infected = True  # взаимное инфицирование
         target.live_power += catcher.reproduction_power
-    if catcher.infected:
+    if catcher.infected and not target.infected:
         target.infected = True  # взаимное инфицирование
         catcher.live_power += target.reproduction_power
 
     if REPRODUCTION and \
             not (target.infected and catcher.infected) \
-            and target.reproduction_power == catcher.reproduction_power == 100:
+            and target.reproduction_power == catcher.reproduction_power == 100\
+            and len(person_list) < MAX_POPULATION:
+
         child = Person(TEST_SECTOR)
         child.update_border_points(catcher.oval_bounds)
         person_list.append(child)
@@ -246,6 +249,7 @@ def draw(person, canvas):
             canvas.itemconfigure(person.oval_id, fill="yellow")
         else:
             canvas.itemconfigure(person.oval_id, fill="white")
+
 
 def tact_update(person):
     if person.infected and person.live_power > 0:
