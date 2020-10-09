@@ -3,30 +3,30 @@ import random
 
 WIDTH = 300
 HEIGHT = 300
-TEST_SECTOR = (0, 0, 50, 50)
+TEST_SECTOR = (0, 0, 150, 150)
 INITIAL_SPEED = 0.5
 MAX_INFECTED_AREA_RADIUS = 10
 PERSON_RADIUS = 3
 
-PERSON_CNT = 2
-INFECTED_CNT = 0
+PERSON_CNT = 20
+INFECTED_CNT = 4
 
 ZERO_X_SPEED = 0
 ZERO_Y_SPEED = 0
-SPAWN_IN_CENTER = 1
-REPRODUCTION = False
+SPAWN_IN_CENTER = 0
+REPRODUCTION = 1
 
 
 class Person:
     def __init__(self, area, infected=False):
-        self.x_speed = 0 if ZERO_X_SPEED else random.uniform(-INITIAL_SPEED, INITIAL_SPEED)
-        self.y_speed = 0 if ZERO_Y_SPEED else random.uniform(-INITIAL_SPEED, INITIAL_SPEED)
+        self.x_speed = round(0 if ZERO_X_SPEED else random.uniform(-INITIAL_SPEED, INITIAL_SPEED), 2)
+        self.y_speed = round(0 if ZERO_Y_SPEED else random.uniform(-INITIAL_SPEED, INITIAL_SPEED), 2)
         self.radius = PERSON_RADIUS
         self.current_infected_area = PERSON_RADIUS
         self.infected = infected  # bool(random.randint(0, 1))
         self.chaotic_movement = False  # bool(random.randint(0, 1))
         self.live_power = 150
-        self.reproduction_power = 0
+        self.reproduction_power = random.randint(0, 100)
 
         self.area = area
         self.oval_bounds = [0, 0, 0, 0]
@@ -58,10 +58,10 @@ class Person:
                                 y + self.radius]
 
     def calculate_new_position(self, x, y):
-        z = [self.oval_bounds[0] + x,
-             self.oval_bounds[1] + y,
-             self.oval_bounds[2] + x,
-             self.oval_bounds[3] + y]
+        z = [round(self.oval_bounds[0] + x, 2),
+             round(self.oval_bounds[1] + y, 2),
+             round(self.oval_bounds[2] + x, 2),
+             round(self.oval_bounds[3] + y, 2)]
         self.update_border_points(z)
 
     def update_border_points(self, oval_bounds):
@@ -88,9 +88,9 @@ class Person:
     def bounce(self, action):
         # отскок с ускорением
         if self.chaotic_movement:
-            rnd = random.uniform(-INITIAL_SPEED, INITIAL_SPEED)
+            rnd = round(random.uniform(-INITIAL_SPEED, INITIAL_SPEED), 2)
         else:
-            rnd = random.random() - INITIAL_SPEED
+            rnd = round(random.uniform(0, INITIAL_SPEED), 2)
         if action == "bounce_x":
             self.y_speed = 0 if ZERO_Y_SPEED else rnd if self.y_speed > 0 else - rnd
             # if abs(self.x_speed) < infected_MAX_SPEED:
@@ -108,10 +108,6 @@ class Person:
                 self.x_speed = 0 if ZERO_X_SPEED else rnd if self.x_speed > 0 else - rnd
 
     def move(self, _person_list):
-        print(self.x_speed)
-        print(self.oval_bounds)
-        print(c.coords(self.oval_id))
-        print("---")
         if self.live_power > 0:
             # горизонтальный отскок
             self.horizontal_move(_person_list)
@@ -144,7 +140,7 @@ class Person:
     def horizontal_move(self, _person_list):
         y_speed_tmp = 0  # self.y_speed if self.top != self.area[1] and self.bot != self.area[3] else 0
         # Если мы далеко от вертикальных линий
-        if self.right + self.x_speed < self.area[2] and self.left + self.x_speed > self.area[0]:
+        if self.left + self.x_speed > self.area[0] and self.right + self.x_speed < self.area[2]:
             if self.check_horizontal_collisions(_person_list):
                 self.bounce("bounce_x")
             else:
@@ -241,17 +237,23 @@ def draw(person, canvas):
                                              fill="", outline='#%02x%02x%02x' % new_radar_color, width=2)
         canvas.itemconfigure(person.oval_id, fill="red")
 
-    # draw_non_active_point
-    if person.live_power == 0:
-        canvas.itemconfigure(person.oval_id, fill="gray")
-        canvas.delete(person.radar_id)
-
+        # draw_non_active_point
+        if person.live_power == 0:
+            canvas.itemconfigure(person.oval_id, fill="gray")
+            canvas.delete(person.radar_id)
+    else:
+        if person.reproduction_power == 100:
+            canvas.itemconfigure(person.oval_id, fill="yellow")
+        else:
+            canvas.itemconfigure(person.oval_id, fill="white")
 
 def tact_update(person):
     if person.infected and person.live_power > 0:
         person.live_power -= 1
     if not person.infected and person.reproduction_power < 100:
         person.reproduction_power += 1
+    if person.live_power == 0:
+        person.y_speed = person.x_speed = 0
 
 
 def main():
@@ -259,6 +261,9 @@ def main():
         draw(i, c)
         i.move(person_list)
         tact_update(i)
+        # print(c.coords(i.oval_id))
+        # print(i.oval_bounds)
+
     root.after(30, main)  # вызываем саму себя каждые 30 миллисекунд
 
 
